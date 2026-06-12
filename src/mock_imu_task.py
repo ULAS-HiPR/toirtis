@@ -9,7 +9,7 @@ from sqlalchemy import text
 import logging
 
 from task import Task
-from config import MachaConfig, ImuParameters
+from config import ToirtisConfig, ImuParameters
 
 
 class MockImuTask(Task):
@@ -24,7 +24,7 @@ class MockImuTask(Task):
     5. "turbulence" - simulate turbulent flight conditions
     """
 
-    def __init__(self, config: MachaConfig, mock_strategy: str = "auto"):
+    def __init__(self, config: ToirtisConfig, mock_strategy: str = "auto"):
         super().__init__(config)
 
         # Find IMU task config

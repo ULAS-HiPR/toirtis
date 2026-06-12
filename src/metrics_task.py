@@ -7,13 +7,13 @@ import platform
 import json
 from datetime import datetime
 import os
-from config import MachaConfig
+from config import ToirtisConfig
 
 
 class MetricsTask(Task):
     """Task to collect system metrics (CPU, temp, storage, RAM, uptime)."""
 
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         super().__init__(config)
 
     async def execute(self, engine: AsyncEngine, logger: logging.Logger) -> dict:

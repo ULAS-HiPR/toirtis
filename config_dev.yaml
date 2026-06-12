@@ -1,11 +1,11 @@
 app:
-    name: macha-dev
+    name: toirtis-dev
     debug: true
 
 logging:
     level: DEBUG
     file:
-        path: logs/macha_dev.log
+        path: logs/toirtis_dev.log
         format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     console:
         format: "%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -17,8 +17,8 @@ logging:
             CRITICAL: red,bg_white
 
 db:
-    filename: macha_dev.db
-    connection_string: sqlite+aiosqlite:///macha_dev.db
+    filename: toirtis_dev.db
+    connection_string: sqlite+aiosqlite:///toirtis_dev.db
     overwrite: false
 
 tasks:
@@ -47,41 +47,3 @@ tasks:
           rotation: 0
           capture_timeout: 5
           retry_attempts: 2
-
-    # Use mock hardware sensors for development
-    - name: barometer_reading
-      class: MockBaroTask
-      frequency: 30
-      enabled: true # Using mock sensor for development
-      parameters:
-          i2c_bus: 1
-          address: 0x77
-          sea_level_pressure: 1013.25
-
-    - name: imu_reading
-      class: MockImuTask
-      frequency: 30
-      enabled: true # Using mock sensor for development
-      parameters:
-          i2c_bus: 1
-          address: 0x6A
-          accel_range: "4G"
-          gyro_range: "500DPS"
-
-    - name: ai_segmentation
-      class: MockAiTask
-      frequency: 30 # Must be >= camera frequency (15s) and divisible
-      enabled: true # Enabled for development testing with mock AI
-      parameters:
-          model_path: models/landing_segmentation_dev.tflite
-          model_name: landing_segmentation_dev
-          model_version: "1.0.0"
-          use_coral_tpu: false # Disabled for MacBook development
-          output_folder: dev_segmentation_outputs
-          confidence_threshold: 0.5
-          max_queue_size: 20
-          processing_timeout: 10
-          max_retries: 1
-          output_format: png
-          save_confidence_overlay: true
-          class_names: ["background", "safe_landing", "unsafe_landing"]

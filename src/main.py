@@ -1,6 +1,6 @@
 import asyncio
 import signal
-from config import load_config, MachaConfig
+from config import load_config, ToirtisConfig
 from logger import setup_logger
 from database import init_database
 from scheduler import TaskScheduler
@@ -22,7 +22,7 @@ class Application:
             # Load and validate configuration
             self.config = load_config()
             self.logger = setup_logger(self.config)
-            self.logger.info("Starting Macha application")
+            self.logger.info("Starting Toirtis application")
             self.logger.info(
                 f"Configuration loaded with {len(self.config.tasks)} tasks"
             )

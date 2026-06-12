@@ -232,7 +232,7 @@ class TaskConfig(BaseModel):
         return v
 
 
-class MachaConfig(BaseModel):
+class ToirtisConfig(BaseModel):
     app: AppConfig
     logging: LoggingConfig
     db: DatabaseConfig
@@ -251,8 +251,6 @@ class MachaConfig(BaseModel):
     @model_validator(mode="after")
     def validate_tasks(self):
         camera_tasks = [t for t in self.tasks if t.class_name in ["CameraTask", "MockCameraTask"]]
-        baro_tasks = [t for t in self.tasks if t.class_name == "BaroTask"]
-        imu_tasks = [t for t in self.tasks if t.class_name == "ImuTask"]
 
         # Validate camera tasks (including mock cameras)
         for task in camera_tasks:
@@ -273,46 +271,14 @@ class MachaConfig(BaseModel):
                             f"Cannot create directory '{camera.output_folder}' for camera '{camera.name}': {e}"
                         )
 
-        # Validate barometer tasks
-        for task in baro_tasks:
-            if task.parameters is None:
-                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
-            if not isinstance(task.parameters, BarometerParameters):
-                raise ValueError(
-                    f"{task.class_name} '{task.name}' has invalid parameters"
-                )
-
-        # Validate IMU tasks
-        for task in imu_tasks:
-            if task.parameters is None:
-                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
-            if not isinstance(task.parameters, ImuParameters):
-                raise ValueError(
-                    f"{task.class_name} '{task.name}' has invalid parameters"
-                )
-
-        # AI task frequency validation
-        ai_tasks = [t for t in self.tasks if t.class_name == "AiTask" and t.enabled]
-        if ai_tasks and camera_tasks:
-            enabled_camera_tasks = [t for t in camera_tasks if t.enabled]
-            if enabled_camera_tasks:
-                camera_freq = min(t.frequency for t in enabled_camera_tasks)
-                for ai_task in ai_tasks:
-                    if ai_task.frequency < camera_freq:
-                        raise ValueError(
-                            f"AI task '{ai_task.name}' frequency ({ai_task.frequency}s) cannot be "
-                            f"faster than camera task frequency ({camera_freq}s)"
-                        )
-                    if ai_task.frequency % camera_freq != 0:
-                        raise ValueError(
-                            f"AI task '{ai_task.name}' frequency ({ai_task.frequency}s) must be "
-                            f"divisible by camera frequency ({camera_freq}s)"
-                        )
-
+    
+        # Validate CAN tasks
+        # to do
+        
         return self
 
 
-def load_config(config_path: str = "config.yaml") -> MachaConfig:
+def load_config(config_path: str = "config.yaml") -> ToirtisConfig:
     """Load and validate configuration from YAML file."""
     config_file = Path(config_path)
 
@@ -326,14 +292,14 @@ def load_config(config_path: str = "config.yaml") -> MachaConfig:
         raise ValueError(f"Invalid YAML in configuration file: {e}")
 
     try:
-        config = MachaConfig(**raw_config)
+        config = ToirtisConfig(**raw_config)
         return config
     except Exception as e:
         print("CONFIG VALIDATION ERROR:", e)
         raise ValueError(f"Configuration validation failed: {e}")
 
 
-def get_task_config(config: MachaConfig, task_name: str) -> Optional[TaskConfig]:
+def get_task_config(config: ToirtisConfig, task_name: str) -> Optional[TaskConfig]:
     """Get configuration for a specific task."""
     for task in config.tasks:
         if task.name == task_name:
@@ -341,11 +307,11 @@ def get_task_config(config: MachaConfig, task_name: str) -> Optional[TaskConfig]
     return None
 
 
-def get_camera_tasks(config: MachaConfig) -> List[TaskConfig]:
+def get_camera_tasks(config: ToirtisConfig) -> List[TaskConfig]:
     """Get all camera task configurations."""
     return [task for task in config.tasks if task.class_name == "CameraTask"]
 
 
-def get_enabled_tasks(config: MachaConfig) -> List[TaskConfig]:
+def get_enabled_tasks(config: ToirtisConfig) -> List[TaskConfig]:
     """Get all enabled task configurations."""
     return [task for task in config.tasks if task.enabled]

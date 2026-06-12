@@ -3,13 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 import logging
 from sqlalchemy import text
 import asyncio
-from config import MachaConfig
+from config import ToirtisConfig
 
 
 class Task(ABC):
     """Base class for tasks."""
 
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         self.config = config
         self.name = self.__class__.__name__
 

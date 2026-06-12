@@ -3,7 +3,7 @@ from sqlalchemy import text
 from pathlib import Path
 import asyncio
 import logging
-from config import MachaConfig
+from config import ToirtisConfig
 
 
 class DatabaseManager:
@@ -244,7 +244,7 @@ class DatabaseManager:
             await conn.commit()
 
 
-async def init_database(config: MachaConfig = None) -> AsyncEngine:
+async def init_database(config: ToirtisConfig = None) -> AsyncEngine:
     """Initialize the SQLite database based on config and apply migrations."""
     if config is None:
         from config import load_config

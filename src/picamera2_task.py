@@ -7,12 +7,12 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
-from config import MachaConfig, CameraParameters
+from config import ToirtisConfig, CameraParameters
 
 class Picamera2Task(Task):
     """Camera task using picamera2 for Raspberry Pi Camera V2."""
 
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         super().__init__(config)
         # Find camera task config for this class
         camera_params = None

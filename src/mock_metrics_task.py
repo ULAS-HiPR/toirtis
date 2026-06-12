@@ -10,7 +10,7 @@ from sqlalchemy import text
 import logging
 
 from task import Task
-from config import MachaConfig
+from config import ToirtisConfig
 
 
 class MockMetricsTask(Task):
@@ -25,7 +25,7 @@ class MockMetricsTask(Task):
     5. "variable" - highly variable resource usage
     """
 
-    def __init__(self, config: MachaConfig, mock_strategy: str = "auto"):
+    def __init__(self, config: ToirtisConfig, mock_strategy: str = "auto"):
         super().__init__(config)
 
         self.mock_strategy = self._determine_strategy(mock_strategy)

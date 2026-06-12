@@ -1,10 +1,10 @@
 import logging
 import colorlog
 from pathlib import Path
-from config import MachaConfig
+from config import ToirtisConfig
 
 
-def setup_logger(config: MachaConfig = None) -> logging.Logger:
+def setup_logger(config: ToirtisConfig = None) -> logging.Logger:
     """Set up a logger with file and console handlers based on config."""
     if config is None:
         from config import load_config

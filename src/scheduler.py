@@ -16,14 +16,14 @@ from mock_baro_task import MockBaroTask
 from mock_imu_task import MockImuTask
 from mock_metrics_task import MockMetricsTask
 from mock_ai_task import MockAiTask
-from config import MachaConfig, get_enabled_tasks
+from config import ToirtisConfig, get_enabled_tasks
 
 
 class TaskScheduler:
     """Scheduler to run tasks at their configured frequencies."""
 
     def __init__(
-        self, config: MachaConfig, engine: AsyncEngine, logger: logging.Logger
+        self, config: ToirtisConfig, engine: AsyncEngine, logger: logging.Logger
     ):
         self.config = config
         self.engine = engine

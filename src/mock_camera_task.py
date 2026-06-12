@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 from typing import List, Optional
 
-from config import MachaConfig, CameraParameters
+from config import ToirtisConfig, CameraParameters
 from task import Task
 
 # Check for optional dependencies
@@ -44,7 +44,7 @@ class MockCameraTask(Task):
     4. Cycling through image sets
     """
 
-    def __init__(self, config: MachaConfig, mock_strategy: str = "auto"):
+    def __init__(self, config: ToirtisConfig, mock_strategy: str = "auto"):
         super().__init__(config)
 
         # Find camera task config
