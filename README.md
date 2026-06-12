@@ -1,12 +1,12 @@
-# Macha
+# Toritis
 
-CanSat software to collect flight data and pictures to run in-flight on a Coral TPU to segment safe vs unsafe landings.
+CanSat software to collect flight data and pictures to run a quadreped robot on landing. 
 
 ## Features
 
 - **Configurable Scheduling**: Run tasks at configurable intervals with Pydantic validation
 - **System Metrics**: CPU, temperature, memory, and storage monitoring
-- **Sensor Data Collection**: Barometer (BMP390) and IMU (LSM6DSOX) data logging
+- **CAN Data Collection**: MCP2515 CAN bus data collection from the Ogma Flight Computer
 - **Schema Validation**: Pydantic-based configuration with comprehensive validation
 - **Systemd Service**: Production-ready deployment with automatic startup
 
@@ -18,7 +18,8 @@ CanSat software to collect flight data and pictures to run in-flight on a Coral 
 - SQLite database support
 
 ### Hardware Dependencies (Pi only)
-- I2C sensors: BMP390 (barometer), LSM6DSOX (IMU)
+- I2C sensors: Batter monitoring
+- SPI sensors : MCP2515 CAN bus interface
 - Camera module
 - System packages: libcap-dev, i2c-tools, libcamera-apps
 
@@ -145,35 +146,6 @@ tasks:
 
 **Note**: Sensor tasks will gracefully handle missing hardware and log warnings if sensors are not available.
 
-### AI Segmentation Configuration
-
-```yaml
-tasks:
-  - name: ai_segmentation
-    class: AiTask
-    frequency: 20  # seconds (must be >= camera frequency and divisible)
-    enabled: true
-    parameters:
-      model_path: models/landing_segmentation_edgetpu.tflite
-      model_name: landing_segmentation_v1
-      model_version: "1.0.0"
-      use_coral_tpu: true
-      output_folder: segmentation_outputs
-      confidence_threshold: 0.6
-      max_queue_size: 30
-      processing_timeout: 8
-      max_retries: 2
-      output_format: png
-      save_confidence_overlay: true
-      class_names: ["background", "safe_landing", "unsafe_landing"]
-      class_colors:
-        background: [0, 0, 0]
-        safe_landing: [0, 255, 0]
-        unsafe_landing: [255, 0, 0]
-```
-
-**Note**: AI task processes captured images to generate segmentation masks for landing safety analysis. Requires TensorFlow Lite models optimized for Coral TPU.
-
 ### Configuration Validation
 
 All configuration is validated using Pydantic schemas:
@@ -239,10 +211,10 @@ The database uses a centralized schema management system with automatic migratio
 ## File Structure
 
 ```
-macha/
+toirtis/
 ├── config.yaml          # Main configuration with validation
-├── macha.db             # SQLite database with all task data
-├── macha.service        # Systemd service file
+├── toirtis.db             # SQLite database with all task data
+├── toirtis.service        # Systemd service file
 ├── DATABASE_COMMANDS.md # SQL queries and database reference
 ├── src/
 │   ├── main.py          # Main application entry point
@@ -275,33 +247,33 @@ macha/
 
 ```bash
 # Application logs
-tail -f logs/macha.log
+tail -f logs/toirtis.log
 
 # Service logs (if deployed)
-journalctl -u macha -f
+journalctl -u toirtis -f
 ```
 
 ### Checking Status
 
 ```bash
 # Service status
-systemctl status macha
+systemctl status toirtis
 ```
 
 ### Database Access
 
-All task data is stored in `macha.db` with automatic schema migrations. Access the database using:
+All task data is stored in `toirtis.db` with automatic schema migrations. Access the database using:
 
 ```bash
 # SQLite CLI
-sqlite3 macha.db
+sqlite3 toirtis.db
 
 # Quick status check
 ./scripts/check_db.sh
 
 # Quick data checks
-sqlite3 macha.db "SELECT COUNT(*) FROM images;"
-sqlite3 macha.db "SELECT * FROM system_metrics ORDER BY timestamp DESC LIMIT 1;"
+sqlite3 matoirtischa.db "SELECT COUNT(*) FROM images;"
+sqlite3 toirtis.db "SELECT * FROM system_metrics ORDER BY timestamp DESC LIMIT 1;"
 ```
 
 See `DATABASE_COMMANDS.md` for comprehensive SQL examples and queries for all tasks.
@@ -345,13 +317,13 @@ Configuration validation will show specific errors:
 
 ```bash
 # Check service status
-systemctl status macha
+systemctl status toirtis
 
 # View service logs
-journalctl -u macha -f
+journalctl -u toirtis -f
 
 # Restart service
-sudo systemctl restart macha
+sudo systemctl restart toirtis
 ```
 
 ## Development
@@ -373,7 +345,7 @@ All task parameters must be defined as Pydantic models in `src/config.py`. This 
 
 ## Logging
 
-Logs are written to `logs/macha.log` and console. Configure log levels in `config.yaml`:
+Logs are written to `logs/toirtis.log` and console. Configure log levels in `config.yaml`:
 
 - `DEBUG`: Detailed debugging information
 - `INFO`: General operational messages
@@ -387,25 +359,25 @@ Logs are written to `logs/macha.log` and console. Configure log levels in `confi
 
 ```bash
 # Start service
-sudo systemctl start macha
+sudo systemctl start toirtis
 
 # Stop service
-sudo systemctl stop macha
+sudo systemctl stop toirtis
 
 # Restart service
-sudo systemctl restart macha
+sudo systemctl restart toirtis
 
 # Enable auto-start
-sudo systemctl enable macha
+sudo systemctl enable toirtis
 
 # Disable auto-start
-sudo systemctl disable macha
+sudo systemctl disable toirtis
 
 # View status
-systemctl status macha
+systemctl status toirtis
 
 # View logs
-journalctl -u macha -f
+journalctl -u toirtis -f
 ```
 
 ### Service Configuration
@@ -519,7 +491,7 @@ When adding new sensor tasks:
 
 1. Create sensor task class inheriting from `Task`
 2. Add parameter schema in `config.py`
-3. Update task validation in `MachaConfig.validate_tasks()`
+3. Update task validation in `ToirtisConfig.validate_tasks()`
 4. Add configuration example to `config.yaml`
 5. Create unit tests in `tests/`
 6. Update documentation
