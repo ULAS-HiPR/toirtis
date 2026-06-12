@@ -56,6 +56,22 @@ sudo apt-get install -y \
     libcamera-apps \
     libcamera-dev
 
+# Install PyAV and FFmpeg dependencies
+echo "Installing FFmpeg and PyAV build dependencies..."
+sudo apt-get install -y \
+    ffmpeg \
+    pkg-config \
+    build-essential \
+    python3-dev \
+    cython3 \
+    libavformat-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavutil-dev \
+    libavfilter-dev \
+    libswscale-dev \
+    libswresample-dev
+
 # Enable I2C interface
 echo -e "${GREEN}Configuring I2C interface...${NC}"
 if ! grep -q "dtparam=i2c_arm=on" /boot/firmware/config.txt; then
@@ -138,72 +154,7 @@ def test_i2c():
     except Exception as e:
         print(f"✗ I2C bus test failed: {e}")
         return False
-
-def test_bmp390():
-    """Test BMP390 barometer sensor."""
-    print("Testing BMP390 barometer...")
-    try:
-        import board
-        import busio
-        import adafruit_bmp3xx
-        
-        i2c = busio.I2C(board.SCL, board.SDA)
-        sensor = adafruit_bmp3xx.BMP3XX_I2C(i2c, address=0x77)
-        
-        pressure = sensor.pressure
-        temperature = sensor.temperature
-        
-        print(f"✓ BMP390 connected: {pressure:.2f} hPa, {temperature:.2f}°C")
-        i2c.deinit()
-        return True
-    except Exception as e:
-        print(f"✗ BMP390 test failed: {e}")
-        try:
-            # Try alternative address
-            i2c = busio.I2C(board.SCL, board.SDA)
-            sensor = adafruit_bmp3xx.BMP3XX_I2C(i2c, address=0x76)
-            pressure = sensor.pressure
-            temperature = sensor.temperature
-            print(f"✓ BMP390 connected at 0x76: {pressure:.2f} hPa, {temperature:.2f}°C")
-            i2c.deinit()
-            return True
-        except Exception as e2:
-            print(f"✗ BMP390 test failed at both addresses: {e2}")
-            return False
-
-def test_lsm6dsox():
-    """Test LSM6DSOX IMU sensor."""
-    print("Testing LSM6DSOX IMU...")
-    try:
-        import board
-        import busio
-        import adafruit_lsm6ds
-        
-        i2c = busio.I2C(board.SCL, board.SDA)
-        sensor = adafruit_lsm6ds.LSM6DSOX(i2c, address=0x6A)
-        
-        accel = sensor.acceleration
-        gyro = sensor.gyro
-        temp = sensor.temperature
-        
-        print(f"✓ LSM6DSOX connected: accel=({accel[0]:.2f},{accel[1]:.2f},{accel[2]:.2f}), temp={temp:.2f}°C")
-        i2c.deinit()
-        return True
-    except Exception as e:
-        print(f"✗ LSM6DSOX test failed: {e}")
-        try:
-            # Try alternative address
-            i2c = busio.I2C(board.SCL, board.SDA)
-            sensor = adafruit_lsm6ds.LSM6DSOX(i2c, address=0x6B)
-            accel = sensor.acceleration
-            gyro = sensor.gyro
-            temp = sensor.temperature
-            print(f"✓ LSM6DSOX connected at 0x6B: accel=({accel[0]:.2f},{accel[1]:.2f},{accel[2]:.2f}), temp={temp:.2f}°C")
-            i2c.deinit()
-            return True
-        except Exception as e2:
-            print(f"✗ LSM6DSOX test failed at both addresses: {e2}")
-            return False
+#to add can test & servo test
 
 def test_camera():
     """Test camera functionality."""
@@ -225,13 +176,11 @@ def test_camera():
 
 def main():
     """Run all hardware tests."""
-    print("=== Macha Hardware Test ===")
+    print("=== Toritis Hardware Test ===")
     print()
     
     tests = [
         ("I2C Bus", test_i2c),
-        ("BMP390 Barometer", test_bmp390),
-        ("LSM6DSOX IMU", test_lsm6dsox),
         ("Camera", test_camera),
     ]
     

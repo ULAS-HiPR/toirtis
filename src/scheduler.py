@@ -8,14 +8,8 @@ from task import Task, TaskManager
 from metrics_task import MetricsTask
 from camera_task import CameraTask
 from mock_camera_task import MockCameraTask
-from baro_task import BaroTask
-from imu_task import ImuTask
-from ai_task import AiTask
 from picamera2_task import Picamera2Task
-from mock_baro_task import MockBaroTask
-from mock_imu_task import MockImuTask
 from mock_metrics_task import MockMetricsTask
-from mock_ai_task import MockAiTask
 from config import ToirtisConfig, get_enabled_tasks
 
 
@@ -44,12 +38,6 @@ class TaskScheduler:
             "CameraTask": CameraTask,
             "Picamera2Task": Picamera2Task,
             "MockCameraTask": MockCameraTask,
-            "BaroTask": BaroTask,
-            "ImuTask": ImuTask,
-            "AiTask": AiTask,
-            "MockAiTask": MockAiTask,
-            "MockBaroTask": MockBaroTask,
-            "MockImuTask": MockImuTask,
             "MockMetricsTask": MockMetricsTask
         }
 

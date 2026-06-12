@@ -7,13 +7,13 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
-from config import MachaConfig, CameraParameters
+from config import ToirtisConfig, CameraParameters
 
 
 class CameraTask(Task):
     """Fast camera task using libcamera-still for cam0 and cam1."""
 
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         super().__init__(config)
         # Find camera task config
         camera_params = None
@@ -49,9 +49,9 @@ class CameraTask(Task):
                 filename = f"{cam.name}_{timestamp.strftime('%Y%m%d_%H%M%S')}.{self.image_format}"
                 filepath = os.path.join(cam.output_folder, filename)
 
-                # Capture with libcamera-still (fast)
+                # Capture with rpicam-still (fast)
                 cmd = [
-                    "libcamera-still",
+                    "rpicam-still",
                     "--camera",
                     str(cam.port),
                     "--output",
