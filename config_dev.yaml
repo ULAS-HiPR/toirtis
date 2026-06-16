@@ -27,40 +27,36 @@ tasks:
       frequency: 10
       enabled: true
 
-    - name: mock_camera_capture
-      class: MockCameraTask # Using mock camera for development
-      frequency: 15
+    - name: camera_capture
+      class: CameraTask
+      frequency: 2
       enabled: true
       parameters:
           cameras:
-              - port: 0 # MacBook built-in camera (if using OpenCV)
-                name: mock_cam0
-                output_folder: dev_images/cam0
-              - port: 1 # Mock second camera
-                name: mock_cam1
-                output_folder: dev_images/cam1
+              - port: 0
+                name: cam0
+                output_folder: images/cam0
           image_format: jpg
-          quality: 85
+          quality: 95
           resolution:
-              width: 1280
-              height: 720
-          rotation: 0
-          capture_timeout: 5
-          retry_attempts: 2
-
+              width: 1920
+              height: 1080
+          rotation: 180
+          capture_timeout: 3
+          retry_attempts: 1
 
     - name : robot_task
       class: RobotTask
       frequency: 5
       enabled: true
       parameters:
-          front_servo_port: /dev/ttyAM0
-          back_servo_port: /dev/ttyAM1
+          front_servo_port: /dev/ttyACM0
+          back_servo_port: /dev/ttyACM1
           front_servo_ids : [2, 6, 3, 5]
           back_servo_ids : [4, 6, 1, 2]
 
-    - name : can_monitor
-      class: CanTask
+    - name : mock_can_monitor
+      class: MockCanTask
       frequency: 5
       enabled: true
       parameters:
@@ -69,3 +65,4 @@ tasks:
         loopback : false
         silent : false
         listen_timeout : 1
+        mock_strategy : landing_sequence

@@ -1,3 +1,4 @@
+import asyncio
 import struct
 import logging
 from typing import Optional
@@ -10,8 +11,7 @@ from config import ToirtisConfig, RobotParameters
 
 try:
     from scservo_sdk import sms_sts, PortHandler
-    import robot.helper
-    import robot.presets
+    from robot import helper, presets
     SERVO_AVAILABLE = True
 except ImportError:
     SERVO_AVAILABLE = False
@@ -57,6 +57,9 @@ class RobotTask(Task):
         self.back_servo       = None
         self.servos_ready     = False
         self._last_flight_state: Optional[int] = None
+        self._walk_done = False
+        self._landing_armed = False
+        self._walk_task: Optional[asyncio.Task] = None
         self.parameters: Optional[RobotParameters] = None
 
         for task_config in config.tasks:
@@ -69,6 +72,40 @@ class RobotTask(Task):
 
         if self.parameters is None:
             raise ValueError("No valid RobotTask configuration found")
+
+    def _run_walk_and_pose(self, logger: logging.Logger) -> None:
+        if not self._init_servos(logger):
+            return
+
+        self._do_walk(55, logger)
+        self._do_can_pose()
+
+    async def _run_walk_sequence(self, logger: logging.Logger) -> None:
+        """Run the landing walk without blocking the event loop."""
+        try:
+            await asyncio.to_thread(self._run_walk_and_pose, logger)
+            self._walk_done = True
+        except Exception as e:
+            logger.error(f"Background walking sequence failed: {e}")
+        finally:
+            self._walk_task = None
+
+    def _do_can_pose(self) -> None:
+        import time
+        for sid, pos in presets.front_legs_pos:
+            helper.move_servo(self.front_servo, sid, pos)
+        for sid, pos in presets.back_legs_pos:
+            helper.move_servo(self.back_servo, sid, pos)
+
+        time.sleep(2)
+
+        print("\nMoving to can")
+        for sid, pos in presets.front_can_pos:
+            helper.move_servo(self.front_servo, sid, pos)
+        for sid, pos in presets.back_can_pos:
+            helper.move_servo(self.back_servo, sid, pos)
+
+        time.sleep(2)
 
     def _init_servos(self, logger: logging.Logger) -> bool:
         if self.servos_ready:
@@ -210,24 +247,28 @@ class RobotTask(Task):
             f"t={flight['timestamp_ms']} ms"
         )
 
-        if state == FlightState.LANDED and self._last_flight_state != FlightState.LANDED:
+        if self._walk_task is not None and self._walk_task.done():
+            try:
+                self._walk_task.result()
+            except Exception as e:
+                logger.error(f"Walking task failed: {e}")
+            finally:
+                self._walk_task = None
+
+        if state != FlightState.LANDED and self._walk_done:
+            self._walk_done = False
+
+        if state != FlightState.LANDED:
+            self._landing_armed = True
+
+        if state == FlightState.LANDED and self._landing_armed and not self._walk_done:
             logger.info("Landing detected — initiating walking sequence.")
 
-            if not self._init_servos(logger):
-                self._last_flight_state = state
-                return {
-                    "success": False,
-                    "action":  "servo_init_failed",
-                    "flight_state": state_name,
-                    "flight_data":  flight,
-                }
-
-            try:
-                self._do_walk(steps=4, logger=logger)
-                action = "walked"
-            except Exception as e:
-                logger.error(f"Walking cycle failed: {e}")
-                action = "walk_error"
+            if self._walk_task is None:
+                self._walk_task = asyncio.create_task(self._run_walk_sequence(logger))
+                action = "walking_started"
+            else:
+                action = "walking"
 
         else:
             if state != self._last_flight_state:

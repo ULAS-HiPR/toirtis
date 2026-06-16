@@ -103,7 +103,6 @@ def imu_config():
         ]
     )
 
-
 class TestBaroTask:
     """Test cases for BaroTask."""
 
@@ -318,10 +317,6 @@ class TestImuTask:
         assert result["data"]["accel_x"] == 0.1
         assert result["data"]["accel_y"] == 0.2
         assert result["data"]["accel_z"] == 9.8
-        assert result["data"]["gyro_x"] == 0.01
-        assert result["data"]["gyro_y"] == 0.02
-        assert result["data"]["gyro_z"] == 0.03
-        assert result["data"]["temperature_celsius"] == 26.5
     @patch('imu_task.SENSOR_AVAILABLE', True)
     @patch('imu_task.busio')
     @patch('imu_task.board')

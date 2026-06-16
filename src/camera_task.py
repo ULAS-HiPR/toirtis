@@ -62,6 +62,7 @@ class CameraTask(Task):
                     str(self.resolution.height),
                     "--timeout",
                     "500",
+                    "--vflip" if self.rotation == 180 else "--hflip",
                     "--nopreview",
                 ]
 

@@ -198,6 +198,11 @@ class CanParameters(BaseModel):
     loopback: bool = Field(default=False, description="Enable loopback mode for testing")
     silent: bool = Field(default=False, description="Enable silent mode for CAN controller")
     listen_timeout : int = Field(default=0.5, ge=1, description="Timeout for listening to CAN messages in seconds")
+    mock_strategy: str = Field(
+        default="landing_sequence",
+        pattern="^(auto|landing_sequence|sequence|landing|landed|static)$",
+        description="Mock CAN generation strategy",
+    )
 
 
 class TaskConfig(BaseModel):
@@ -221,7 +226,7 @@ class TaskConfig(BaseModel):
             if isinstance(v, dict):
                 return CameraParameters(**v)
             return v
-        elif class_name == "CanTask":
+        elif class_name in ["CanTask", "MockCanTask"]:
             if isinstance(v, dict):
                 return CanParameters(**v)
             return v
@@ -282,10 +287,19 @@ class ToirtisConfig(BaseModel):
                         )
 
     
-        # Validate CAN tasks
-        # to do
+        # Validate CAN tasks (including mock CAN)
+        can_tasks = [t for t in self.tasks if t.class_name in ["CanTask", "MockCanTask"]]
+
+        for task in can_tasks:
+            if task.parameters is None:
+                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
+            if not isinstance(task.parameters, CanParameters):
+                raise ValueError(f"{task.class_name} '{task.name}' has invalid parameters")
         
         return self
+
+
+MachaConfig = ToirtisConfig
 
 
 def load_config(config_path: str = "config_dev.yaml") -> ToirtisConfig:
