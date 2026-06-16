@@ -186,13 +186,26 @@ class AiParameters(BaseModel):
                     raise ValueError(f"RGB values for {class_name} must be 0-255")
         return v
 
+class RobotParameters(BaseModel):
+    front_servo_port: str = Field(..., description="Serial port for front servos")
+    back_servo_port: str = Field(..., description="Serial port for back servos")
+    front_servo_ids: List[int] = Field(..., description="IDs of front servos")
+    back_servo_ids: List[int] = Field(..., description="IDs of back servos")
+
+class CanParameters(BaseModel):
+    spi_bus: int = Field(default=0, ge=0, description="SPI bus number")
+    cs_pin: int = Field(default=0, ge=0, description="Chip select pin for CAN controller")
+    loopback: bool = Field(default=False, description="Enable loopback mode for testing")
+    silent: bool = Field(default=False, description="Enable silent mode for CAN controller")
+    listen_timeout : int = Field(default=0.5, ge=1, description="Timeout for listening to CAN messages in seconds")
+
 
 class TaskConfig(BaseModel):
     name: str = Field(..., min_length=1, description="Task name")
     class_name: str = Field(..., alias="class", description="Task class name")
     frequency: int = Field(..., ge=1, description="Task frequency in seconds")
     enabled: bool = Field(default=True, description="Whether task is enabled")
-    parameters: Optional[Union[CameraParameters, BarometerParameters, ImuParameters, AiParameters, Dict[str, Any]]] = Field(default=None)
+    parameters: Optional[Union[CameraParameters, CanParameters, RobotParameters, Dict[str, Any]]] = Field(default=None)
 
     @field_validator("parameters", mode="before")
     @classmethod
@@ -202,23 +215,20 @@ class TaskConfig(BaseModel):
 
         # Get class_name from the data being validated
         data = info.data if hasattr(info, "data") else {}
-        class_name = data.get("class")
+        class_name = data.get("class_name")
 
         if class_name in ["CameraTask", "MockCameraTask"]:
             if isinstance(v, dict):
                 return CameraParameters(**v)
             return v
-        elif class_name == "BaroTask":
+        elif class_name == "CanTask":
             if isinstance(v, dict):
-                return BarometerParameters(**v)
+                return CanParameters(**v)
             return v
-        elif class_name == "ImuTask":
+        elif class_name == "RobotTask":
+            print(f"Validating RobotTask parameters: {v}")
             if isinstance(v, dict):
-                return ImuParameters(**v)
-            return v
-        elif class_name == "AiTask":
-            if isinstance(v, dict):
-                return AiParameters(**v)
+                return RobotParameters(**v)
             return v
         return v
 
@@ -278,7 +288,7 @@ class ToirtisConfig(BaseModel):
         return self
 
 
-def load_config(config_path: str = "config.yaml") -> ToirtisConfig:
+def load_config(config_path: str = "config_dev.yaml") -> ToirtisConfig:
     """Load and validate configuration from YAML file."""
     config_file = Path(config_path)
 

@@ -47,3 +47,25 @@ tasks:
           rotation: 0
           capture_timeout: 5
           retry_attempts: 2
+
+
+    - name : robot_task
+      class: RobotTask
+      frequency: 5
+      enabled: true
+      parameters:
+          front_servo_port: /dev/ttyAM0
+          back_servo_port: /dev/ttyAM1
+          front_servo_ids : [2, 6, 3, 5]
+          back_servo_ids : [4, 6, 1, 2]
+
+    - name : can_monitor
+      class: CanTask
+      frequency: 5
+      enabled: true
+      parameters:
+        spi_bus : 1
+        cs_pin : 0
+        loopback : false
+        silent : false
+        listen_timeout : 1

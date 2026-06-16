@@ -21,6 +21,7 @@ logs/
 # Output directories
 output/
 images/
+dev_images/
 test_images/
 mock_assets/
 segmentation_outputs/

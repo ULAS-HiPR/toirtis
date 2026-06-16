@@ -41,8 +41,31 @@ tasks:
           resolution:
               width: 1920
               height: 1080
-          rotation: 0
+          rotation: 180
           capture_timeout: 3
           retry_attempts: 1
+
+    - name : robot_task
+      class: RobotTask
+      frequency: 5
+      enabled: true
+      parameters:
+          front_servo_port: /dev/ttyAM0
+          back_servo_port: /dev/ttyAM1
+          front_servo_ids: [1, 2, 3, 4, 5]
+          back_servo_ids: [6, 7, 8, 9, 10]
+
+    - name : can_monitor
+      class: CanTask
+      frequency: 5
+      enabled: true
+      parameters:
+        spi_bus : 1
+        cs_pin : 0
+        loopback : false
+        silent : false
+        listen_timeout : 1
+
+          
 
 #to add can service
