@@ -74,3 +74,13 @@ tasks:
           front_servo_ids: [1, 2, 3, 4, 5]
           back_servo_ids: [6, 7, 8, 9, 10]
 
+    - name: flight_task
+      class: FlightTask
+      frequency: 10
+      enabled: true
+      parameters:
+          main_height: 3.0
+          liftoff_threshold: 2.0
+          drouge_delay: 0
+          accel_axis: accel_z
+          gravity_offset: 9.81
