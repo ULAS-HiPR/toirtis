@@ -80,6 +80,14 @@ if ! grep -q "dtparam=i2c_arm=on" /boot/firmware/config.txt; then
     I2C_ENABLED=true
 fi
 
+# Enable SPI interface
+echo -e "${GREEN}Configuring SPI interface...${NC}"
+if ! grep -q "dtparam=spi=on" /boot/firmware/config.txt; then
+    echo "Enabling SPI interface..."
+    echo "dtparam=spi=on" | sudo tee -a /boot/firmware/config.txt
+    SPI_ENABLED=true
+fi
+
 # Add user to i2c group
 if ! groups $USER | grep -q i2c; then
     echo "Adding user $USER to i2c group..."

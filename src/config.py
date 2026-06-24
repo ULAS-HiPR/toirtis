@@ -194,7 +194,7 @@ class RobotParameters(BaseModel):
 
 class CanParameters(BaseModel):
     spi_bus: int = Field(default=0, ge=0, description="SPI bus number")
-    cs_pin: int = Field(default=0, ge=0, description="Chip select pin for CAN controller")
+    cs_pin: str = Field(default=0, description="Chip select pin for CAN controller")
     loopback: bool = Field(default=False, description="Enable loopback mode for testing")
     silent: bool = Field(default=False, description="Enable silent mode for CAN controller")
     listen_timeout : int = Field(default=0.5, ge=1, description="Timeout for listening to CAN messages in seconds")

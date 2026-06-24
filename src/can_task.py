@@ -11,6 +11,7 @@ from config import ToirtisConfig, CanParameters
 try:
     import board
     import busio
+    import digitalio
     from adafruit_mcp2515 import MCP2515
     from adafruit_mcp2515.canio import Message, RemoteTransmissionRequest
     SENSOR_AVAILABLE = True
@@ -25,11 +26,12 @@ class CanTask(Task):
         super().__init__(config)
         self.can_bus = None
         self.spi = None
+        self.cs = None
         self.initialized = False
         self.parameters: Optional[CanParameters] = None
 
         for task_config in config.tasks:
-            if task_config.class_name == "CanTask" and task_config.name == getattr(self, 'task_name', 'can'):
+            if task_config.class_name == "CanTask":  #should change this
                 self.parameters = task_config.parameters
                 break
 
@@ -49,6 +51,7 @@ class CanTask(Task):
             return True
 
         try:
+            print(self.parameters)
             if self.parameters.spi_bus == 1:
                 self.spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
             else:
@@ -57,9 +60,11 @@ class CanTask(Task):
                 )
                 return False
 
+            pin_num = self.parameters.cs_pin # should change
+            self.cs = digitalio.DigitalInOut(board.D5)
             self.can_bus = MCP2515(
                 self.spi,
-                cs=self.parameters.cs_pin,
+                self.cs,
                 loopback=self.parameters.loopback,
                 silent=self.parameters.silent,
             )
