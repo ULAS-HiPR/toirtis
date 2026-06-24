@@ -12,7 +12,9 @@ from picamera2_task import Picamera2Task
 from mock_metrics_task import MockMetricsTask
 from mock_can_task import MockCanTask
 from robot_task import RobotTask
-from can_task import CanTask
+from flight_task import FlightTask
+from imu_task import ImuTask
+from baro_task import BaroTask
 from config import ToirtisConfig, get_enabled_tasks
 
 
@@ -41,7 +43,9 @@ class TaskScheduler:
             "CameraTask": CameraTask,
             "Picamera2Task": Picamera2Task,
             "RobotTask": RobotTask,
-            "CanTask": CanTask,
+            "FlightTask": FlightTask,
+            "BaroTask": BaroTask,
+            "ImuTask": ImuTask,
             "MockCameraTask": MockCameraTask,
             "MockMetricsTask": MockMetricsTask,
             "MockCanTask": MockCanTask,

@@ -1,5 +1,4 @@
 import asyncio
-import struct
 import logging
 from typing import Optional
 
@@ -8,6 +7,7 @@ from sqlalchemy import text
 
 from task import Task
 from config import ToirtisConfig, RobotParameters
+from fsm.state_machine import State
 
 try:
     from scservo_sdk import sms_sts, PortHandler
@@ -16,40 +16,15 @@ try:
 except ImportError:
     SERVO_AVAILABLE = False
 
-#need to update w/ flgith comp stuff
-class FlightState:
-    UNKNOWN   = 0
-    PAD       = 1
-    ASCENT    = 2
-    DESCENT   = 3
-    LANDED    = 4  
-
-
-FLIGHT_STATE_NAMES = {
-    FlightState.UNKNOWN:  "UNKNOWN",
-    FlightState.PAD:      "PAD",
-    FlightState.ASCENT:   "ASCENT",
-    FlightState.DESCENT:  "DESCENT",
-    FlightState.LANDED:   "LANDED",
-}
-
-FLIGHT_STATE_CAN_ID = 0x100
 
 class RobotTask(Task):
     """
-    Reads the most recent FLIGHT_STATE CAN message from the database and
+    Reads the most recent flight_state row from the database and
     triggers a walking cycle when landing is detected.
-
-    CAN payload layout (8 bytes):
-        [0]      state         uint8   enum
-        [1-2]    altitude_m    int16   1 m / LSB
-        [3-5]    vspeed_cms    int24   1 cm/s / LSB  (big-endian, signed)
-        [6-7]    timestamp_ms  uint16  1 ms / LSB
     """
 
     def __init__(self, config: ToirtisConfig):
         super().__init__(config)
-
 
         self.front_servo_port = None
         self.front_servo      = None
@@ -141,71 +116,35 @@ class RobotTask(Task):
             logger.error(f"Servo initialisation failed: {e}")
             return False
 
-    @staticmethod
-    def _parse_flight_state(raw_data: list) -> Optional[dict]:
-        """
-        Parse a FLIGHT_STATE CAN payload from a list of byte ints.
-        Returns None if the payload is too short or malformed.
-        """
-        if not raw_data or len(raw_data) < 8:
-            return None
-
-        try:
-            data = bytes(raw_data)
-
-            state        = data[0]
-            altitude_m   = struct.unpack_from(">h", data, 1)[0]   # int16 big-endian
-
-            # int24 big-endian signed — unpack as 3 bytes then sign-extend
-            raw24        = (data[3] << 16) | (data[4] << 8) | data[5]
-            vspeed_cms   = raw24 if raw24 < 0x800000 else raw24 - 0x1000000
-
-            timestamp_ms = struct.unpack_from(">H", data, 6)[0]   # uint16 big-endian
-
-            return {
-                "state":        state,
-                "altitude_m":   altitude_m,
-                "vspeed_cms":   vspeed_cms,
-                "timestamp_ms": timestamp_ms,
-            }
-
-        except Exception:
-            return None
-
     async def _fetch_latest_flight_state(self, engine: AsyncEngine, logger: logging.Logger) -> Optional[dict]:
-        """Return the most recent FLIGHT_STATE CAN message, or None."""
+        """Return the most recent flight_state row, or None."""
         try:
             async with engine.connect() as conn:
                 row = await conn.execute(
                     text("""
-                        SELECT msg_id, data, created_at
-                        FROM   can_messages
-                        WHERE  msg_id = :can_id
+                        SELECT state, state_name, altitude_m, velocity_mps,
+                               acceleration_mps2, timestamp
+                        FROM   flight_state
                         ORDER  BY id DESC
                         LIMIT  1
-                    """),
-                    {"can_id": FLIGHT_STATE_CAN_ID},
+                    """)
                 )
                 result = row.fetchone()
 
             if result is None:
                 return None
 
-            import json
-            raw_data = json.loads(result.data) if result.data else None
-            if raw_data is None:
-                return None
-
-            parsed = self._parse_flight_state(raw_data)
-            if parsed is None:
-                logger.warning("Could not parse FLIGHT_STATE payload.")
-                return None
-
-            parsed["received_at"] = str(result.created_at)
-            return parsed
+            return {
+                "state":            result.state,
+                "state_name":       result.state_name,
+                "altitude_m":       result.altitude_m,
+                "velocity_mps":     result.velocity_mps,
+                "acceleration_mps2": result.acceleration_mps2,
+                "received_at":      str(result.timestamp),
+            }
 
         except Exception as e:
-            logger.error(f"Failed to read CAN messages from database: {e}")
+            logger.error(f"Failed to read flight state from database: {e}")
             return None
 
     def _do_walk(self, steps: int, logger: logging.Logger) -> None:
@@ -230,7 +169,7 @@ class RobotTask(Task):
         flight = await self._fetch_latest_flight_state(engine, logger)
 
         if flight is None:
-            logger.info("No FLIGHT_STATE CAN message available yet.")
+            logger.info("No flight state available yet.")
             return {
                 "success": True,
                 "action":  "no_data",
@@ -238,13 +177,13 @@ class RobotTask(Task):
             }
 
         state      = flight["state"]
-        state_name = FLIGHT_STATE_NAMES.get(state, f"UNKNOWN({state})")
+        state_name = flight["state_name"]
 
         logger.info(
             f"Flight state: {state_name} | "
-            f"alt={flight['altitude_m']} m | "
-            f"vspeed={flight['vspeed_cms']} cm/s | "
-            f"t={flight['timestamp_ms']} ms"
+            f"alt={flight['altitude_m']:.1f} m | "
+            f"vel={flight['velocity_mps']:.2f} m/s | "
+            f"accel={flight['acceleration_mps2']:.2f} m/s²"
         )
 
         if self._walk_task is not None and self._walk_task.done():
@@ -255,13 +194,13 @@ class RobotTask(Task):
             finally:
                 self._walk_task = None
 
-        if state != FlightState.LANDED and self._walk_done:
+        if state != State.LANDED and self._walk_done:
             self._walk_done = False
 
-        if state != FlightState.LANDED:
+        if state != State.LANDED:
             self._landing_armed = True
 
-        if state == FlightState.LANDED and self._landing_armed and not self._walk_done:
+        if state == State.LANDED and self._landing_armed and not self._walk_done:
             logger.info("Landing detected — initiating walking sequence.")
 
             if self._walk_task is None:

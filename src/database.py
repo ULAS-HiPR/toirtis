@@ -30,6 +30,7 @@ class DatabaseManager:
             (2, self._create_camera_tables),
             (3, self._create_metrics_tables),
             (4, self._create_sensor_tables),
+            (5, self._create_flight_state_table),
         ]
         
         for version, migration_func in migrations:
@@ -145,21 +146,55 @@ class DatabaseManager:
     async def _create_sensor_tables(self):
         """Migration 4: Create sensor data tables."""
         async with self.engine.connect() as conn:
-            # CAN messages table
+            # Barometer readings table
             await conn.execute(
                 text("""
-                CREATE TABLE IF NOT EXISTS can_messages (
-                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    msg_id        INTEGER,
-                    msg_id_hex    TEXT,
-                    is_rtr        BOOLEAN,
-                    data          TEXT,
-                    rtr_length    INTEGER,
+                CREATE TABLE IF NOT EXISTS barometer_readings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    pressure_hpa REAL,
+                    temperature_celsius REAL,
+                    altitude_meters REAL,
+                    sea_level_pressure REAL,
                     sensor_config TEXT
                 )
                 """)
             )
+            
+            # IMU readings table
+            await conn.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS imu_readings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    accel_x REAL,
+                    accel_y REAL,
+                    accel_z REAL,
+                    gyro_x REAL,
+                    gyro_y REAL,
+                    gyro_z REAL,
+                    temperature_celsius REAL,
+                    sensor_config TEXT
+                )
+                """)
+            )
+            await conn.commit()
+
+    async def _create_flight_state_table(self):
+        async with self.engine.connect() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS flight_state (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    state INTEGER,
+                    state_name TEXT,
+                    altitude_m REAL,
+                    velocity_mps REAL,
+                    acceleration_mps2 REAL,
+                    raw_altitude_m REAL,
+                    raw_accel REAL
+                )
+            """))
             await conn.commit()
 
 async def init_database(config: ToirtisConfig = None) -> AsyncEngine:

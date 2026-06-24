@@ -204,6 +204,12 @@ class CanParameters(BaseModel):
         description="Mock CAN generation strategy",
     )
 
+class FlightParameters(BaseModel):
+    main_height: float = Field(default=3.0, ge=0, description="Altitude (m) below which DROUGE -> MAIN")
+    liftoff_threshold: float = Field(default=2.0, gt=0, description="abs(accel) (m/s²) signalling liftoff")
+    drouge_delay: float = Field(default=0, ge=0, description="Passed through to FlightStateMachine")
+    accel_axis: str = Field(default="accel_z", pattern="^(accel_x|accel_y|accel_z)$", description="IMU axis aligned with vertical")
+    gravity_offset: float = Field(default=9.81, description="Gravity (m/s²) subtracted from accel_axis at rest")
 
 class TaskConfig(BaseModel):
     name: str = Field(..., min_length=1, description="Task name")
@@ -239,6 +245,10 @@ class TaskConfig(BaseModel):
             if isinstance(v, dict):
                 return ImuParameters(**v)
             return v
+        elif class_name == "FlightTask":
+            if isinstance(v, dict):
+                return FlightParameters(**v)
+            return v
         return v
 
     @field_validator("name")
@@ -273,6 +283,7 @@ class ToirtisConfig(BaseModel):
         baro_tasks = [t for t in self.tasks if t.class_name == "BaroTask"]
         imu_tasks = [t for t in self.tasks if t.class_name == "ImuTask"]
         robot_tasks = [t for t in self.tasks if t.class_name == "RobotTask"]
+        flight_tasks = [t for t in self.tasks if t.class_name == "FlightTask"]
 
         # Validate camera tasks (including mock cameras)
         for task in camera_tasks:
@@ -315,6 +326,14 @@ class ToirtisConfig(BaseModel):
             if task.parameters is None:
                 raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
             if not isinstance(task.parameters, RobotParameters):
+                raise ValueError(
+                    f"{task.class_name} '{task.name}' has invalid parameters"
+                )
+            
+        for task in flight_tasks:
+            if task.parameters is None:
+                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
+            if not isinstance(task.parameters, FlightParameters):
                 raise ValueError(
                     f"{task.class_name} '{task.name}' has invalid parameters"
                 )
