@@ -28,10 +28,11 @@ dependencies = [
 pi-hardware = [
     "picamera2>=0.3.27",
     "adafruit-blinka>=8.0.0",
-    "adafruit-circuitpython-mcp2515>=1.1.13",
     "RPi.GPIO>=0.7.1",
     "pillow>=10.0.0",
     "numpy>=1.24.0",
+    "adafruit-circuitpython-lsm6ds",
+    "adafruit-circuitpython-bmp3xx",
 ]
 
 # For development with mock tasks (no hardware needed)

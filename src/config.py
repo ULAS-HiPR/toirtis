@@ -210,7 +210,7 @@ class TaskConfig(BaseModel):
     class_name: str = Field(..., alias="class", description="Task class name")
     frequency: int = Field(..., ge=1, description="Task frequency in seconds")
     enabled: bool = Field(default=True, description="Whether task is enabled")
-    parameters: Optional[Union[CameraParameters, CanParameters, RobotParameters, Dict[str, Any]]] = Field(default=None)
+    parameters: Optional[Union[CameraParameters, BarometerParameters, ImuParameters, RobotParameters, Dict[str, Any]]] = Field(default=None)
 
     @field_validator("parameters", mode="before")
     @classmethod
@@ -226,14 +226,18 @@ class TaskConfig(BaseModel):
             if isinstance(v, dict):
                 return CameraParameters(**v)
             return v
-        elif class_name in ["CanTask", "MockCanTask"]:
-            if isinstance(v, dict):
-                return CanParameters(**v)
-            return v
         elif class_name == "RobotTask":
             print(f"Validating RobotTask parameters: {v}")
             if isinstance(v, dict):
                 return RobotParameters(**v)
+            return v
+        elif class_name == "BaroTask":
+            if isinstance(v, dict):
+                return BarometerParameters(**v)
+            return v
+        elif class_name == "ImuTask":
+            if isinstance(v, dict):
+                return ImuParameters(**v)
             return v
         return v
 
@@ -266,6 +270,9 @@ class ToirtisConfig(BaseModel):
     @model_validator(mode="after")
     def validate_tasks(self):
         camera_tasks = [t for t in self.tasks if t.class_name in ["CameraTask", "MockCameraTask"]]
+        baro_tasks = [t for t in self.tasks if t.class_name == "BaroTask"]
+        imu_tasks = [t for t in self.tasks if t.class_name == "ImuTask"]
+        robot_tasks = [t for t in self.tasks if t.class_name == "RobotTask"]
 
         # Validate camera tasks (including mock cameras)
         for task in camera_tasks:
@@ -286,21 +293,33 @@ class ToirtisConfig(BaseModel):
                             f"Cannot create directory '{camera.output_folder}' for camera '{camera.name}': {e}"
                         )
 
-    
-        # Validate CAN tasks (including mock CAN)
-        can_tasks = [t for t in self.tasks if t.class_name in ["CanTask", "MockCanTask"]]
-
-        for task in can_tasks:
+         # Validate barometer tasks
+        for task in baro_tasks:
             if task.parameters is None:
                 raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
-            if not isinstance(task.parameters, CanParameters):
-                raise ValueError(f"{task.class_name} '{task.name}' has invalid parameters")
-        
+            if not isinstance(task.parameters, BarometerParameters):
+                raise ValueError(
+                    f"{task.class_name} '{task.name}' has invalid parameters"
+                )
+
+        # Validate IMU tasks
+        for task in imu_tasks:
+            if task.parameters is None:
+                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
+            if not isinstance(task.parameters, ImuParameters):
+                raise ValueError(
+                    f"{task.class_name} '{task.name}' has invalid parameters"
+                )
+            
+        for task in robot_tasks:
+            if task.parameters is None:
+                raise ValueError(f"{task.class_name} '{task.name}' requires parameters")
+            if not isinstance(task.parameters, RobotParameters):
+                raise ValueError(
+                    f"{task.class_name} '{task.name}' has invalid parameters"
+                )
+            
         return self
-
-
-MachaConfig = ToirtisConfig
-
 
 def load_config(config_path: str = "config_dev.yaml") -> ToirtisConfig:
     """Load and validate configuration from YAML file."""
