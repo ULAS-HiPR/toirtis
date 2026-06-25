@@ -28,7 +28,7 @@ except ImportError as e:
 class ImuTask(Task):
     """Task for reading data from LSM6DSOX IMU sensor (accelerometer + gyroscope)."""
     
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         super().__init__(config)
         self.sensor = None
         self.i2c = None

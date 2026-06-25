@@ -21,11 +21,12 @@ except ImportError as e:
 class BaroTask(Task):
     """Task for reading data from BMP390 barometer sensor."""
     
-    def __init__(self, config: MachaConfig):
+    def __init__(self, config: ToirtisConfig):
         super().__init__(config)
         self.sensor = None
         self.i2c = None
         self.initialized = False
+        
         self.parameters: Optional[BarometerParameters] = None
         
         # Get task-specific configuration

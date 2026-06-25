@@ -35,6 +35,19 @@ wheels = [
 ]
 
 [[package]]
+name = "adafruit-circuitpython-bmp3xx"
+version = "1.3.27"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "adafruit-blinka" },
+    { name = "adafruit-circuitpython-busdevice" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/4e/6f77b8e03bb2c246501b32b5b4f2cfef1e13b1ec46a4a6ada7ba59a0c111/adafruit_circuitpython_bmp3xx-1.3.27.tar.gz", hash = "sha256:3e636b4c9cde00dafdf5af7a77f82298753483bcf81cb39c4517686839d38b2e", size = 24968, upload-time = "2026-04-23T20:54:51.812Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/8c/e4bd0893df90990824784e792074bcd99c5a06a948bc3f53c45577a7059a/adafruit_circuitpython_bmp3xx-1.3.27-py3-none-any.whl", hash = "sha256:271c18c7cf8be2ddb16dab2b7f21530be8f1b93292b7f9b1ac179223fb7b3416", size = 6671, upload-time = "2026-04-23T20:54:50.987Z" },
+]
+
+[[package]]
 name = "adafruit-circuitpython-busdevice"
 version = "5.2.12"
 source = { registry = "https://pypi.org/simple" }
@@ -60,16 +73,32 @@ wheels = [
 ]
 
 [[package]]
-name = "adafruit-circuitpython-mcp2515"
-version = "1.1.13"
+name = "adafruit-circuitpython-lsm6ds"
+version = "4.6.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adafruit-blinka" },
     { name = "adafruit-circuitpython-busdevice" },
+    { name = "adafruit-circuitpython-register" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/28/62e067e03068d39998d3a2243cfc9f2ec6435bf4a0605c854b1732b6753f/adafruit_circuitpython_mcp2515-1.1.13.tar.gz", hash = "sha256:7981ef1cb9a7805d6db9e952e3f7c888b47c32259e7320f5e236abd6b0899360", size = 36271, upload-time = "2026-04-23T21:00:35.466Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/45/e84a63586df1ffdac4e6f6484beb781a364138a5b455d538dacb4d4880f9/adafruit_circuitpython_lsm6ds-4.6.3.tar.gz", hash = "sha256:ade09692bac623b396493be26673c2730c43874099a8e34ef5108c11b0458eb9", size = 29764, upload-time = "2026-04-23T20:59:31.967Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/14/1d3aa834d3b9fb2c00fedde68732356c74f29e85301faec99d6230a9ba31/adafruit_circuitpython_mcp2515-1.1.13-py3-none-any.whl", hash = "sha256:379809e8624a14ad5859ad59980b2ebf83ffe7a0e0007ae2b73e34d76f6d1745", size = 15966, upload-time = "2026-04-23T21:00:34.451Z" },
+    { url = "https://files.pythonhosted.org/packages/26/1b/1c385b5dfefe8a95e51c85de0b888bc8ed4175fd1e7c20e10a069fe384ff/adafruit_circuitpython_lsm6ds-4.6.3-py3-none-any.whl", hash = "sha256:079351c8ef3ce9a375ad617664a59aad276a16c3891844d7ee30f9583147d6b2", size = 13939, upload-time = "2026-04-23T20:59:30.958Z" },
+]
+
+[[package]]
+name = "adafruit-circuitpython-register"
+version = "1.11.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "adafruit-blinka" },
+    { name = "adafruit-circuitpython-busdevice" },
+    { name = "adafruit-circuitpython-typing" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c3/68/9eea7a41e92a8c641b3b457925001d5b0d15161f54e2c55effb36f715915/adafruit_circuitpython_register-1.11.3.tar.gz", hash = "sha256:4da69922e5f4fed9842dd90bc2e58848e2bc3ea959cbec788d4fb4b5d41021ae", size = 31696, upload-time = "2026-04-23T21:24:47.875Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/12/e23f35b7b16d39295c0c63765b1be0342ae33991bb64974a86fcb29a7142/adafruit_circuitpython_register-1.11.3-py3-none-any.whl", hash = "sha256:83b5e9ad1b7afb35330a549ef62fb3ce5cf8e13128ef52fb6eb13f3cd8f2cca6", size = 19009, upload-time = "2026-04-23T21:24:46.961Z" },
 ]
 
 [[package]]
@@ -2762,6 +2791,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "adafruit-blinka" },
+    { name = "adafruit-circuitpython-bmp3xx" },
+    { name = "adafruit-circuitpython-lsm6ds" },
     { name = "aiosqlite" },
     { name = "colorlog" },
     { name = "ftservo-python-sdk" },
@@ -2795,7 +2826,8 @@ dev = [
 ]
 pi-hardware = [
     { name = "adafruit-blinka" },
-    { name = "adafruit-circuitpython-mcp2515" },
+    { name = "adafruit-circuitpython-bmp3xx" },
+    { name = "adafruit-circuitpython-lsm6ds" },
     { name = "numpy" },
     { name = "picamera2" },
     { name = "pillow" },
@@ -2810,7 +2842,10 @@ release = [
 requires-dist = [
     { name = "adafruit-blinka", specifier = ">=8.58.1" },
     { name = "adafruit-blinka", marker = "extra == 'pi-hardware'", specifier = ">=8.0.0" },
-    { name = "adafruit-circuitpython-mcp2515", marker = "extra == 'pi-hardware'", specifier = ">=1.1.13" },
+    { name = "adafruit-circuitpython-bmp3xx", specifier = ">=1.3.27" },
+    { name = "adafruit-circuitpython-bmp3xx", marker = "extra == 'pi-hardware'" },
+    { name = "adafruit-circuitpython-lsm6ds", specifier = ">=4.6.3" },
+    { name = "adafruit-circuitpython-lsm6ds", marker = "extra == 'pi-hardware'" },
     { name = "aiosqlite", specifier = ">=0.20.0" },
     { name = "colorlog", specifier = ">=6.8.2" },
     { name = "commitizen", marker = "extra == 'release'", specifier = ">=3.13.0" },

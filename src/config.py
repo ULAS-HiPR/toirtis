@@ -216,7 +216,7 @@ class TaskConfig(BaseModel):
     class_name: str = Field(..., alias="class", description="Task class name")
     frequency: int = Field(..., ge=1, description="Task frequency in seconds")
     enabled: bool = Field(default=True, description="Whether task is enabled")
-    parameters: Optional[Union[CameraParameters, BarometerParameters, ImuParameters, RobotParameters, Dict[str, Any]]] = Field(default=None)
+    parameters: Optional[Union[CameraParameters, BarometerParameters, ImuParameters, RobotParameters, FlightParameters, Dict[str, Any]]] = Field(default=None)
 
     @field_validator("parameters", mode="before")
     @classmethod

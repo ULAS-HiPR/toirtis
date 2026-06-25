@@ -21,6 +21,8 @@ dependencies = [
     "picamera2>=0.3.27",
     "lgpio>=0.2.2.0",
     "ftservo-python-sdk>=2.0.0",
+    "adafruit-circuitpython-lsm6ds>=4.6.3",
+    "adafruit-circuitpython-bmp3xx>=1.3.27",
 ]
 
 [project.optional-dependencies]
