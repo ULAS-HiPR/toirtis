@@ -1,5 +1,5 @@
 [Unit]
-Description=Macha
+Description=Toirtis
 After=multi-user.target
 Wants=multi-user.target
 
@@ -7,20 +7,20 @@ Wants=multi-user.target
 Type=simple
 User=payload
 Group=payload
-WorkingDirectory=/home/payload/macha
-Environment=PATH=/home/payload/macha/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/payload/macha/.venv/bin/python src/main.py
+WorkingDirectory=/home/payload/toirtis
+Environment=PATH=/home/payload/toirtis/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/payload/toirtis/.venv/bin/python src/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=macha
+SyslogIdentifier=toirtis
 
 # Security settings
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=false
-ReadWritePaths=/home/payload/macha
+ReadWritePaths=/home/payload/toirtis
 PrivateTmp=true
 ProtectKernelTunables=true
 ProtectControlGroups=true
