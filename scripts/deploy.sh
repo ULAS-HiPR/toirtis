@@ -5,13 +5,13 @@
 
 set -e
 
-SERVICE_NAME="macha"
-SERVICE_FILE="macha.service"
+SERVICE_NAME="toirtis"
+SERVICE_FILE="toirtis.service"
 SYSTEMD_DIR="/etc/systemd/system"
 USER="payload"
-MACHA_DIR="/home/payload/macha"
+MACHA_DIR="/home/payload/toirtis"
 
-echo "Deploying Macha  Service..."
+echo "Deploying toirtis  Service..."
 echo "=================================================="
 
 # Check if running as root
@@ -23,13 +23,13 @@ fi
 # Check if service file exists
 if [ ! -f "$SERVICE_FILE" ]; then
     echo "Error: Service file '$SERVICE_FILE' not found"
-    echo "Make sure you're running this from the macha directory"
+    echo "Make sure you're running this from the toirtis directory"
     exit 1
 fi
 
 # Check if macha directory exists
 if [ ! -d "$MACHA_DIR" ]; then
-    echo "Error: Macha directory '$MACHA_DIR' not found"
+    echo "Error: toirtis directory '$MACHA_DIR' not found"
     exit 1
 fi
 
