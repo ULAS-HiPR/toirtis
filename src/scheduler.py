@@ -15,6 +15,8 @@ from robot_task import RobotTask
 from flight_task import FlightTask
 from imu_task import ImuTask
 from baro_task import BaroTask
+from mock_imu_task import MockImuTask
+from mock_baro_task import MockBaroTask
 from config import ToirtisConfig, get_enabled_tasks
 
 
@@ -49,6 +51,8 @@ class TaskScheduler:
             "MockCameraTask": MockCameraTask,
             "MockMetricsTask": MockMetricsTask,
             "MockCanTask": MockCanTask,
+            "MockImuTask": MockImuTask,
+            "MockBaroTask": MockBaroTask,
         }
 
         for task_config in self.task_configs:

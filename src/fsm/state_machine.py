@@ -13,7 +13,7 @@ class State(IntEnum):
 
 
 class FlightStateMachine:
-    def __init__(self, main_height, liftoff_threshold, drouge_delay=0):
+    def __init__(self, main_height=200, liftoff_threshold=20, drouge_delay=0):
         self.main_height = main_height
         self.liftoff_threshold = liftoff_threshold
         self.drouge_delay = drouge_delay
@@ -43,6 +43,7 @@ class FlightStateMachine:
 
         elif self.state == State.READY:
             if abs(accel) > self.liftoff_threshold:
+                print(f"Liftoff detected: accel={accel:.2f} m/s², vel={vel:.2f} m/s, alt={alt:.2f} m")
                 self.change_state(State.POWERED)
 
         elif self.state == State.POWERED:
@@ -58,7 +59,7 @@ class FlightStateMachine:
                 self.change_state(State.MAIN)
 
         elif self.state == State.MAIN:
-            if vel < 0:
+            if vel < 0 or accel < 0.2:
                 self.change_state(State.LANDED)
 
         elif self.state == State.LANDED:

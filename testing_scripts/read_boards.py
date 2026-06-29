@@ -3,8 +3,8 @@ import time
 import helper
 import presets
 
-front_port = "/dev/ttyACM0"
-back_port = "/dev/ttyACM1"
+front_port = "/dev/ttyACM1"
+back_port = "/dev/ttyACM0"
 
 front_servo_id = [2, 6, 3, 5]
 back_servo_id = [4, 6, 1, 2]

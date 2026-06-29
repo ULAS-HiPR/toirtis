@@ -113,6 +113,7 @@ class RobotTask(Task):
             return True
 
         except Exception as e:
+            print(e)
             logger.error(f"Servo initialisation failed: {e}")
             return False
 
@@ -185,7 +186,10 @@ class RobotTask(Task):
             f"vel={flight['velocity_mps']:.2f} m/s | "
             f"accel={flight['acceleration_mps2']:.2f} m/s²"
         )
-
+        print("state is", state_name)
+        print("walk done is", self._walk_done)
+        print("landing armed is", self._landing_armed)
+        
         if self._walk_task is not None and self._walk_task.done():
             try:
                 self._walk_task.result()
@@ -194,14 +198,15 @@ class RobotTask(Task):
             finally:
                 self._walk_task = None
 
-        if state != State.LANDED and self._walk_done:
+        if state != State.READY and self._walk_done:
             self._walk_done = False
+            
+        #if state != State.READY:
+        self._landing_armed = True
 
-        if state != State.LANDED:
-            self._landing_armed = True
-
-        if state == State.LANDED and self._landing_armed and not self._walk_done:
+        if state == State.READY and self._landing_armed and not self._walk_done:
             logger.info("Landing detected — initiating walking sequence.")
+            print("Landing detected — initiating walking sequence.")
 
             if self._walk_task is None:
                 self._walk_task = asyncio.create_task(self._run_walk_sequence(logger))

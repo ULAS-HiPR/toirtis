@@ -22,32 +22,9 @@ db:
     overwrite: false
 
 tasks:
-    - name: metrics_collection
-      class: MetricsTask
-      frequency: 10
-      enabled: true
-
-    - name: camera_capture
-      class: CameraTask
-      frequency: 2
-      enabled: true
-      parameters:
-          cameras:
-              - port: 0
-                name: cam0
-                output_folder: images/cam0
-          image_format: jpg
-          quality: 95
-          resolution:
-              width: 1920
-              height: 1080
-          rotation: 180
-          capture_timeout: 3
-          retry_attempts: 1
-
     - name: barometer_reading
       class: BaroTask
-      frequency: 1
+      frequency: 2
       enabled: true
       parameters:
           i2c_bus: 1
@@ -56,7 +33,7 @@ tasks:
 
     - name: imu_reading
       class: ImuTask
-      frequency: 1
+      frequency: 2
       enabled: true
       parameters:
           i2c_bus: 1
@@ -69,18 +46,18 @@ tasks:
       frequency: 5
       enabled: true
       parameters:
-          front_servo_port: /dev/ttyAM0
-          back_servo_port: /dev/ttyAM1
-          front_servo_ids: [1, 2, 3, 4, 5]
-          back_servo_ids: [6, 7, 8, 9, 10]
+          front_servo_port: /dev/ttyACM1
+          back_servo_port: /dev/ttyACM0
+          front_servo_ids: [2, 6, 3, 5]
+          back_servo_ids: [4, 6, 1, 2]
 
     - name: flight_task
       class: FlightTask
-      frequency: 10
+      frequency: 5
       enabled: true
       parameters:
-          main_height: 3.0
-          liftoff_threshold: 2.0
+          main_height: 100.0
+          liftoff_threshold: 20.0
           drouge_delay: 0
-          accel_axis: accel_z
+          accel_axis: accel_x
           gravity_offset: 9.81

@@ -3,8 +3,8 @@ import time
 import helper
 import presets
 
-front_port = "/dev/ttyACM0"
-back_port = "/dev/ttyACM1"
+front_port = "/dev/ttyACM1"
+back_port = "/dev/ttyACM0"
 
 front_servo_id = [2, 6, 3, 5]
 back_servo_id = [4, 6, 1, 2]
@@ -40,22 +40,22 @@ def do_can_to_stand(front_servo, back_servo):
         helper.read_servo_data(back_servo, id)
 
 
-    print(f"moving to legs")
-    for id, pos in presets.front_legs_pos:
-        helper.move_servo(front_servo, id, pos)
-    for id, pos in presets.back_legs_pos:
-        helper.move_servo(back_servo, id, pos)
-
-    time.sleep(5)
-
-
-    print(f"moving to stand")
-    for id, pos in presets.front_stand_pos:
-        helper.move_servo(front_servo, id, pos)
-    for id, pos in presets.back_stand_pos:
-        helper.move_servo(back_servo, id, pos)
-    
-    time.sleep(5)
+    #print(f"moving to legs")
+    #for id, pos in presets.front_legs_pos:
+    #    helper.move_servo(front_servo, id, pos)
+    #for id, pos in presets.back_legs_pos:
+    #    helper.move_servo(back_servo, id, pos)
+#
+    #time.sleep(5)
+#
+#
+    #print(f"moving to stand")
+    #for id, pos in presets.front_stand_pos:
+    #    helper.move_servo(front_servo, id, pos)
+    #for id, pos in presets.back_stand_pos:
+    #    helper.move_servo(back_servo, id, pos)
+    #
+    #time.sleep(5)
 
 def do_wave(front_servo, back_servo):
     print(f"waving")
@@ -129,11 +129,11 @@ def main():
     for id in back_servo_id:
         helper.read_servo_data(back_servo, id)
 
-    #do_can_to_stand(front_servo, back_servo)
+    do_can_to_stand(front_servo, back_servo)
     #do_walk(front_servo, back_servo, steps=40) #about a full cicle
     #do_wave(front_servo, back_servo)
 
-    do_rock(front_servo, back_servo)
+    #do_rock(front_servo, back_servo)
 
     for id in front_servo_id:
         helper.read_servo_data(front_servo, id)

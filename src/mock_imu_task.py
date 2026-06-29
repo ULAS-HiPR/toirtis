@@ -24,7 +24,7 @@ class MockImuTask(Task):
     5. "turbulence" - simulate turbulent flight conditions
     """
 
-    def __init__(self, config: ToirtisConfig, mock_strategy: str = "auto"):
+    def __init__(self, config: ToirtisConfig, mock_strategy: str = "flight"):
         super().__init__(config)
 
         # Find IMU task config
@@ -60,7 +60,7 @@ class MockImuTask(Task):
 
         # Flight profile
         self.flight_phase = "ground"
-        self.flight_duration = 300.0  # 5 minutes
+        self.flight_duration = 90.0  # 5 minutes
         self.max_speed = 30.0  # m/s
 
         # Vibration parameters
@@ -102,67 +102,96 @@ class MockImuTask(Task):
         }
 
     def _generate_flight_data(self) -> Dict[str, Optional[float]]:
-        """Generate IMU data simulating realistic flight dynamics."""
+        """Generate IMU data simulating a rocket flight matching the FSM phases."""
         current_time = time.time()
         elapsed = current_time - self.start_time
-
+    
         # Normalize time to flight duration
         flight_progress = (elapsed % self.flight_duration) / self.flight_duration
-
-        # Define flight phases with different dynamics
-        if flight_progress < 0.1:  # Ground/taxi
-            self.flight_phase = "ground"
-            target_accel = [random.gauss(0.0, 0.2), random.gauss(0.0, 0.3), self.gravity]
-            target_gyro = [random.gauss(0.0, 0.02), random.gauss(0.0, 0.02), random.gauss(0.0, 0.05)]
-
-        elif flight_progress < 0.2:  # Takeoff
-            self.flight_phase = "takeoff"
-            # Strong forward acceleration and pitch up
-            phase_progress = (flight_progress - 0.1) / 0.1
-            accel_forward = 5.0 * phase_progress
-            pitch_rate = 0.3 * phase_progress
-            target_accel = [random.gauss(0.0, 0.5), accel_forward, self.gravity + random.gauss(0.0, 1.0)]
-            target_gyro = [random.gauss(0.0, 0.1), pitch_rate, random.gauss(0.0, 0.05)]
-
-        elif flight_progress < 0.35:  # Climb
-            self.flight_phase = "climb"
-            # Sustained climb with moderate accelerations
-            target_accel = [random.gauss(0.0, 0.3), random.gauss(2.0, 0.5), self.gravity * 0.9]
-            target_gyro = [random.gauss(0.0, 0.05), random.gauss(0.1, 0.02), random.gauss(0.0, 0.03)]
-
-        elif flight_progress < 0.65:  # Cruise
-            self.flight_phase = "cruise"
-            # Steady flight with small corrections
-            target_accel = [random.gauss(0.0, 0.2), random.gauss(0.0, 0.3), self.gravity + random.gauss(0.0, 0.2)]
-            target_gyro = [random.gauss(0.0, 0.03), random.gauss(0.0, 0.02), random.gauss(0.0, 0.02)]
-
-        elif flight_progress < 0.8:  # Descent
-            self.flight_phase = "descent"
-            # Controlled descent
-            target_accel = [random.gauss(0.0, 0.4), random.gauss(-1.0, 0.5), self.gravity * 1.1]
-            target_gyro = [random.gauss(0.0, 0.06), random.gauss(-0.05, 0.03), random.gauss(0.0, 0.04)]
-
-        else:  # Approach and landing
-            self.flight_phase = "landing"
-            # Variable accelerations during landing
-            phase_progress = (flight_progress - 0.8) / 0.2
-            decel = -3.0 * phase_progress
-            target_accel = [random.gauss(0.0, 0.8), decel, self.gravity + random.gauss(0.0, 0.5)]
-            target_gyro = [random.gauss(0.0, 0.1), random.gauss(-0.1, 0.05), random.gauss(0.0, 0.08)]
-
+    
+        # accel_x is the "up" axis. target_accel_x is the RAW reading (includes
+        # the gravity_offset baseline ~9.81 at rest, just like the real sensor).
+        # FlightTask subtracts gravity_offset before comparing against
+        # liftoff_threshold / checking sign, so design these around that.
+    
+        if flight_progress < 0.03:  # PAD — sitting still, vertical
+            self.flight_phase = "pad"
+            target_accel = [self.gravity, random.gauss(0.0, 0.05), random.gauss(0.0, 0.05)]
+            target_gyro = [random.gauss(0.0, 0.005), random.gauss(0.0, 0.005), random.gauss(0.0, 0.005)]
+    
+        elif flight_progress < 0.06:  # POWERED — short, violent boost (~ a few g net)
+            self.flight_phase = "powered"
+            phase_progress = (flight_progress - 0.03) / 0.03
+            # net thrust ramps up then holds; net ~3g (29.4 m/s²) at peak, well over liftoff_threshold
+            net_thrust = 29.4 * min(1.0, phase_progress * 3)
+            target_accel = [
+                self.gravity + net_thrust + random.gauss(0.0, 1.0),
+                random.gauss(0.0, 1.0),
+                random.gauss(0.0, 1.0),
+            ]
+            target_gyro = [random.gauss(0.0, 0.05), random.gauss(0.0, 0.05), random.gauss(0.0, 0.1)]
+    
+        elif flight_progress < 0.45:  # COASTING — motor burned out, ballistic to apogee
+            self.flight_phase = "coasting"
+            # accelerometer reads ~0 specific force in freefall-up; after gravity_offset
+            # subtraction this nets negative, which is exactly what triggers COASTING
+            target_accel = [random.gauss(0.5, 0.3), random.gauss(0.0, 0.2), random.gauss(0.0, 0.2)]
+            target_gyro = [random.gauss(0.0, 0.02), random.gauss(0.0, 0.02), random.gauss(0.0, 0.02)]
+    
+        elif flight_progress < 0.5:  # apogee / drogue deployment — brief sharp jolt
+            self.flight_phase = "drogue_deploy"
+            target_accel = [
+                self.gravity + random.gauss(0.0, 15.0),   # deployment shock
+                random.gauss(0.0, 3.0),
+                random.gauss(0.0, 3.0),
+            ]
+            target_gyro = [random.gauss(0.0, 0.5), random.gauss(0.0, 0.5), random.gauss(0.0, 0.5)]
+    
+        elif flight_progress < 0.85:  # DROUGE — fast, somewhat unstable descent (~15-25 m/s)
+            self.flight_phase = "drogue"
+            target_accel = [
+                self.gravity + random.gauss(0.0, 2.0),   # net ~0 once descent rate stabilizes
+                random.gauss(0.0, 1.5),
+                random.gauss(0.0, 1.5),
+            ]
+            target_gyro = [random.gauss(0.0, 0.15), random.gauss(0.0, 0.15), random.gauss(0.0, 0.2)]
+    
+        elif flight_progress < 0.88:  # main deployment — second jolt as drogue cuts / main opens
+            self.flight_phase = "main_deploy"
+            target_accel = [
+                self.gravity + random.gauss(0.0, 20.0),
+                random.gauss(0.0, 4.0),
+                random.gauss(0.0, 4.0),
+            ]
+            target_gyro = [random.gauss(0.0, 0.4), random.gauss(0.0, 0.4), random.gauss(0.0, 0.4)]
+    
+        elif flight_progress < 0.98:  # MAIN — slow, stable descent (~5-7 m/s)
+            self.flight_phase = "main"
+            target_accel = [
+                self.gravity + random.gauss(0.0, 0.3),
+                random.gauss(0.0, 0.1),
+                random.gauss(0.0, 0.1),
+            ]
+            target_gyro = [random.gauss(0.0, 0.02), random.gauss(0.0, 0.02), random.gauss(0.0, 0.02)]
+    
+        else:  # LANDED — back to rest
+            self.flight_phase = "landed"
+            target_accel = [self.gravity, random.gauss(0.0, 0.05), random.gauss(0.0, 0.05)]
+            target_gyro = [random.gauss(0.0, 0.01), random.gauss(0.0, 0.01), random.gauss(0.0, 0.01)]
+    
         # Add sensor noise
         accel_x = target_accel[0] + random.gauss(0.0, self.accel_noise_std)
         accel_y = target_accel[1] + random.gauss(0.0, self.accel_noise_std)
         accel_z = target_accel[2] + random.gauss(0.0, self.accel_noise_std)
-
+    
         gyro_x = target_gyro[0] + random.gauss(0.0, self.gyro_noise_std)
         gyro_y = target_gyro[1] + random.gauss(0.0, self.gyro_noise_std)
         gyro_z = target_gyro[2] + random.gauss(0.0, self.gyro_noise_std)
-
-        # Temperature varies with altitude and airspeed
+    
         temperature_celsius = self.temp_base - 0.5 * (flight_progress * 10) + random.gauss(0.0, 0.5)
-
+    
         return {
+            "flight_phase": self.flight_phase,
             "accel_x": round(accel_x, 3),
             "accel_y": round(accel_y, 3),
             "accel_z": round(accel_z, 3),
@@ -268,13 +297,13 @@ class MockImuTask(Task):
                 # Default to stationary
                 data = self._generate_stationary_data()
 
-            logger.debug(f"Mock IMU reading ({self.mock_strategy}): "
+            logger.info(f"Mock IMU reading ({self.mock_strategy}): "
                         f"accel=({data['accel_x']:.3f},{data['accel_y']:.3f},{data['accel_z']:.3f}) m/s², "
                         f"gyro=({data['gyro_x']:.4f},{data['gyro_y']:.4f},{data['gyro_z']:.4f}) rad/s, "
                         f"temp={data['temperature_celsius']:.2f}°C")
 
             if self.mock_strategy == "flight":
-                logger.debug(f"Flight phase: {self.flight_phase}")
+                logger.info(f"Flight phase: {self.flight_phase}")
 
             return data
 

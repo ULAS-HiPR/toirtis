@@ -127,7 +127,7 @@ class BarometerParameters(BaseModel):
 class ImuParameters(BaseModel):
     i2c_bus: int = Field(default=1, ge=0, description="I2C bus number")
     address: int = Field(default=0x6A, ge=0x00, le=0xFF, description="I2C address")
-    accel_range: str = Field(default="4G", pattern="^(2G|4G|8G|16G)$", description="Accelerometer range")
+    accel_range: str = Field(default="16G", pattern="^(2G|4G|8G|16G)$", description="Accelerometer range")
     gyro_range: str = Field(default="500DPS", pattern="^(125DPS|250DPS|500DPS|1000DPS|2000DPS)$", description="Gyroscope range")
 
     @field_validator("address")
@@ -205,8 +205,8 @@ class CanParameters(BaseModel):
     )
 
 class FlightParameters(BaseModel):
-    main_height: float = Field(default=3.0, ge=0, description="Altitude (m) below which DROUGE -> MAIN")
-    liftoff_threshold: float = Field(default=2.0, gt=0, description="abs(accel) (m/s²) signalling liftoff")
+    main_height: float = Field(default=300.0, ge=0, description="Altitude (m) below which DROUGE -> MAIN")
+    liftoff_threshold: float = Field(default=20.0, gt=0, description="abs(accel) (m/s²) signalling liftoff")
     drouge_delay: float = Field(default=0, ge=0, description="Passed through to FlightStateMachine")
     accel_axis: str = Field(default="accel_z", pattern="^(accel_x|accel_y|accel_z)$", description="IMU axis aligned with vertical")
     gravity_offset: float = Field(default=9.81, description="Gravity (m/s²) subtracted from accel_axis at rest")
@@ -340,7 +340,7 @@ class ToirtisConfig(BaseModel):
             
         return self
 
-def load_config(config_path: str = "config_dev.yaml") -> ToirtisConfig:
+def load_config(config_path: str = "config.yaml") -> ToirtisConfig:
     """Load and validate configuration from YAML file."""
     config_file = Path(config_path)
 
