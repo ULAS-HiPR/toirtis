@@ -8,8 +8,8 @@ set -e
 SERVICE_NAME="toirtis"
 SERVICE_FILE="toirtis.service"
 SYSTEMD_DIR="/etc/systemd/system"
-USER="payload"
-MACHA_DIR="/home/payload/toirtis"
+USER="toirtis"
+MACHA_DIR="/home/toirtis/toirtis/"
 
 echo "Deploying toirtis  Service..."
 echo "=================================================="

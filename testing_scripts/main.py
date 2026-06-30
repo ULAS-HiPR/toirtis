@@ -129,8 +129,8 @@ def main():
     for id in back_servo_id:
         helper.read_servo_data(back_servo, id)
 
-    do_can_to_stand(front_servo, back_servo)
-    #do_walk(front_servo, back_servo, steps=40) #about a full cicle
+    #do_can_to_stand(front_servo, back_servo)
+    do_walk(front_servo, back_servo, steps=4) #about a full cicle
     #do_wave(front_servo, back_servo)
 
     #do_rock(front_servo, back_servo)

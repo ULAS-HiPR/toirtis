@@ -272,7 +272,7 @@ sqlite3 toirtis.db
 ./scripts/check_db.sh
 
 # Quick data checks
-sqlite3 matoirtischa.db "SELECT COUNT(*) FROM images;"
+sqlite3 toirtis.db "SELECT COUNT(*) FROM images;"
 sqlite3 toirtis.db "SELECT * FROM system_metrics ORDER BY timestamp DESC LIMIT 1;"
 ```
 

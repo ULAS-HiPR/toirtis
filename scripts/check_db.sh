@@ -3,7 +3,7 @@
 # Database Status Check Script for Macha
 # This script provides a quick overview of all data in the macha database
 
-DB_FILE="macha.db"
+DB_FILE="toirtis.db"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 DB_PATH="$PROJECT_DIR/$DB_FILE"

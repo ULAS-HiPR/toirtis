@@ -7,7 +7,6 @@ from sqlalchemy import text
 
 from task import Task
 from config import ToirtisConfig, RobotParameters
-from fsm.state_machine import State
 
 try:
     from scservo_sdk import sms_sts, PortHandler
@@ -16,11 +15,15 @@ try:
 except ImportError:
     SERVO_AVAILABLE = False
 
+LIFTOFF_ACCEL_THRESHOLD = 40.0  # m/s² — abs(accel_x) + abs(accel_y) + abs(accel_z)
+WALK_DELAY_S = 180               # 3 minutes after liftoff detected
+
 
 class RobotTask(Task):
     """
-    Reads the most recent flight_state row from the database and
-    triggers a walking cycle when landing is detected.
+    Monitors raw IMU data. Once the sum of absolute acceleration axes
+    exceeds LIFTOFF_ACCEL_THRESHOLD, starts a 3-minute countdown then
+    triggers the walking sequence.
     """
 
     def __init__(self, config: ToirtisConfig):
@@ -31,9 +34,8 @@ class RobotTask(Task):
         self.back_servo_port  = None
         self.back_servo       = None
         self.servos_ready     = False
-        self._last_flight_state: Optional[int] = None
-        self._walk_done = False
-        self._landing_armed = False
+        self._walk_done       = False
+        self._liftoff_time: Optional[float] = None   # monotonic time of liftoff
         self._walk_task: Optional[asyncio.Task] = None
         self.parameters: Optional[RobotParameters] = None
 
@@ -48,15 +50,53 @@ class RobotTask(Task):
         if self.parameters is None:
             raise ValueError("No valid RobotTask configuration found")
 
+    # ------------------------------------------------------------------
+    # IMU
+    # ------------------------------------------------------------------
+
+    async def _fetch_latest_imu(self, engine: AsyncEngine, logger: logging.Logger) -> Optional[dict]:
+        """Return the most recent imu_readings row, or None."""
+        try:
+            async with engine.connect() as conn:
+                row = await conn.execute(
+                    text("""
+                        SELECT accel_x, accel_y, accel_z,
+                               gyro_x, gyro_y, gyro_z, timestamp
+                        FROM   imu_readings
+                        ORDER  BY id DESC
+                        LIMIT  1
+                    """)
+                )
+                result = row.fetchone()
+
+            if result is None:
+                return None
+
+            return {
+                "accel_x":   result.accel_x,
+                "accel_y":   result.accel_y,
+                "accel_z":   result.accel_z,
+                "gyro_x":    result.gyro_x,
+                "gyro_y":    result.gyro_y,
+                "gyro_z":    result.gyro_z,
+                "timestamp": str(result.timestamp),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to read IMU data from database: {e}")
+            return None
+
+    # ------------------------------------------------------------------
+    # Walk helpers
+    # ------------------------------------------------------------------
+
     def _run_walk_and_pose(self, logger: logging.Logger) -> None:
         if not self._init_servos(logger):
             return
-
         self._do_walk(55, logger)
         self._do_can_pose()
 
     async def _run_walk_sequence(self, logger: logging.Logger) -> None:
-        """Run the landing walk without blocking the event loop."""
         try:
             await asyncio.to_thread(self._run_walk_and_pose, logger)
             self._walk_done = True
@@ -71,16 +111,18 @@ class RobotTask(Task):
             helper.move_servo(self.front_servo, sid, pos)
         for sid, pos in presets.back_legs_pos:
             helper.move_servo(self.back_servo, sid, pos)
-
         time.sleep(2)
 
-        print("\nMoving to can")
+        print("\nMoving to can pose")
         for sid, pos in presets.front_can_pos:
             helper.move_servo(self.front_servo, sid, pos)
         for sid, pos in presets.back_can_pos:
             helper.move_servo(self.back_servo, sid, pos)
-
         time.sleep(2)
+
+    # ------------------------------------------------------------------
+    # Servo init
+    # ------------------------------------------------------------------
 
     def _init_servos(self, logger: logging.Logger) -> bool:
         if self.servos_ready:
@@ -113,45 +155,15 @@ class RobotTask(Task):
             return True
 
         except Exception as e:
-            print(e)
             logger.error(f"Servo initialisation failed: {e}")
             return False
 
-    async def _fetch_latest_flight_state(self, engine: AsyncEngine, logger: logging.Logger) -> Optional[dict]:
-        """Return the most recent flight_state row, or None."""
-        try:
-            async with engine.connect() as conn:
-                row = await conn.execute(
-                    text("""
-                        SELECT state, state_name, altitude_m, velocity_mps,
-                               acceleration_mps2, timestamp
-                        FROM   flight_state
-                        ORDER  BY id DESC
-                        LIMIT  1
-                    """)
-                )
-                result = row.fetchone()
-
-            if result is None:
-                return None
-
-            return {
-                "state":            result.state,
-                "state_name":       result.state_name,
-                "altitude_m":       result.altitude_m,
-                "velocity_mps":     result.velocity_mps,
-                "acceleration_mps2": result.acceleration_mps2,
-                "received_at":      str(result.timestamp),
-            }
-
-        except Exception as e:
-            logger.error(f"Failed to read flight state from database: {e}")
-            return None
+    # ------------------------------------------------------------------
+    # Walking
+    # ------------------------------------------------------------------
 
     def _do_walk(self, steps: int, logger: logging.Logger) -> None:
-        """Run the walking cycle for the given number of steps."""
         import time
-
         logger.info(f"Starting walking cycle — {steps} step(s).")
         for step in range(steps):
             logger.debug(f"  Step {step + 1}/{steps}")
@@ -161,35 +173,42 @@ class RobotTask(Task):
                 for sid, pos in back_pos:
                     helper.move_servo(self.back_servo, sid, pos)
                 time.sleep(0.4)
-
         logger.info("Walking cycle complete.")
+
+    # ------------------------------------------------------------------
+    # Main execute
+    # ------------------------------------------------------------------
 
     async def execute(self, engine: AsyncEngine, logger: logging.Logger) -> dict:
         logger.info(f"Executing {self.name} task")
 
-        flight = await self._fetch_latest_flight_state(engine, logger)
+        imu = await self._fetch_latest_imu(engine, logger)
 
-        if flight is None:
-            logger.info("No flight state available yet.")
-            return {
-                "success": True,
-                "action":  "no_data",
-                "flight_state": None,
-            }
+        if imu is None:
+            logger.info("No IMU data available yet.")
+            return {"success": True, "action": "no_data", "imu": None}
 
-        state      = flight["state"]
-        state_name = flight["state_name"]
+        accel_magnitude = abs(imu["accel_x"]) + abs(imu["accel_y"]) + abs(imu["accel_z"])
 
         logger.info(
-            f"Flight state: {state_name} | "
-            f"alt={flight['altitude_m']:.1f} m | "
-            f"vel={flight['velocity_mps']:.2f} m/s | "
-            f"accel={flight['acceleration_mps2']:.2f} m/s²"
+            f"IMU accel — x={imu['accel_x']:.2f}  y={imu['accel_y']:.2f}  "
+            f"z={imu['accel_z']:.2f}  |total|={accel_magnitude:.2f} m/s²"
         )
-        print("state is", state_name)
-        print("walk done is", self._walk_done)
-        print("landing armed is", self._landing_armed)
-        
+
+        # ------------------------------------------------------------------
+        # Detect liftoff from raw IMU and stamp the time (once only)
+        # ------------------------------------------------------------------
+        if self._liftoff_time is None and accel_magnitude > LIFTOFF_ACCEL_THRESHOLD:
+            self._liftoff_time = asyncio.get_event_loop().time()
+            logger.info(
+                f"Liftoff detected! |accel|={accel_magnitude:.2f} m/s² — "
+                f"walk will fire in {WALK_DELAY_S}s ({WALK_DELAY_S/60:.1f} min)."
+            )
+            print(f"Liftoff detected — walk timer started ({WALK_DELAY_S}s).")
+
+        # ------------------------------------------------------------------
+        # Harvest any finished background walk task
+        # ------------------------------------------------------------------
         if self._walk_task is not None and self._walk_task.done():
             try:
                 self._walk_task.result()
@@ -198,34 +217,32 @@ class RobotTask(Task):
             finally:
                 self._walk_task = None
 
-        if state != State.READY and self._walk_done:
-            self._walk_done = False
-            
-        #if state != State.READY:
-        self._landing_armed = True
+        # ------------------------------------------------------------------
+        # Fire walk once the delay has elapsed
+        # ------------------------------------------------------------------
+        action = "idle"
 
-        if state == State.READY and self._landing_armed and not self._walk_done:
-            logger.info("Landing detected — initiating walking sequence.")
-            print("Landing detected — initiating walking sequence.")
+        if self._liftoff_time is not None and not self._walk_done:
+            elapsed   = asyncio.get_event_loop().time() - self._liftoff_time
+            remaining = WALK_DELAY_S - elapsed
 
-            if self._walk_task is None:
-                self._walk_task = asyncio.create_task(self._run_walk_sequence(logger))
-                action = "walking_started"
+            if remaining <= 0:
+                if self._walk_task is None:
+                    logger.info("3-minute post-liftoff delay elapsed — starting walk.")
+                    print("3-minute post-liftoff delay elapsed — starting walk.")
+                    self._walk_task = asyncio.create_task(self._run_walk_sequence(logger))
+                    action = "walking_started"
+                else:
+                    action = "walking"
             else:
-                action = "walking"
-
-        else:
-            if state != self._last_flight_state:
-                logger.info(f"State changed to {state_name} — no action required.")
-            action = "idle"
-
-        self._last_flight_state = state
+                logger.debug(f"Walk countdown: {remaining:.0f}s remaining.")
+                action = f"waiting_{remaining:.0f}s"
 
         return {
-            "success":      True,
-            "action":       action,
-            "flight_state": state_name,
-            "flight_data":  flight,
+            "success":          True,
+            "action":           action,
+            "accel_magnitude":  round(accel_magnitude, 3),
+            "imu":              imu,
         }
 
     def __del__(self):

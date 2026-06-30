@@ -5,11 +5,11 @@ Wants=multi-user.target
 
 [Service]
 Type=simple
-User=payload
-Group=payload
-WorkingDirectory=/home/payload/toirtis
-Environment=PATH=/home/payload/toirtis/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/payload/toirtis/.venv/bin/python src/main.py
+User=toirtis
+Group=toirtis
+WorkingDirectory=/home/toirtis/toirtis/
+Environment=PATH=/home/toirtis/toirtis/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/toirtis/toirtis/.venv/bin/python src/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -20,7 +20,7 @@ SyslogIdentifier=toirtis
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=false
-ReadWritePaths=/home/payload/toirtis
+ReadWritePaths=/home/toirtis/toirtis/
 PrivateTmp=true
 ProtectKernelTunables=true
 ProtectControlGroups=true

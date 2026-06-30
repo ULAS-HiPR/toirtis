@@ -47,7 +47,7 @@ tasks:
 
     - name: barometer_reading
       class: BaroTask
-      frequency: 1
+      frequency: 3
       enabled: true
       parameters:
           i2c_bus: 1
@@ -56,7 +56,7 @@ tasks:
 
     - name: imu_reading
       class: ImuTask
-      frequency: 1
+      frequency: 3
       enabled: true
       parameters:
           i2c_bus: 1
@@ -66,7 +66,7 @@ tasks:
 
     - name : robot_task
       class: RobotTask
-      frequency: 5
+      frequency: 3
       enabled: true
       parameters:
           front_servo_port: /dev/ttyACM1
@@ -80,7 +80,7 @@ tasks:
       enabled: true
       parameters:
           main_height: 200.0
-          liftoff_threshold: 20.0
+          liftoff_threshold: 10.0
           drouge_delay: 0
           accel_axis: accel_x
           gravity_offset: 9.81

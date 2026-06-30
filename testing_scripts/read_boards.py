@@ -33,3 +33,8 @@ for id in front_servo_id:
 print("back")
 for id in back_servo_id:
     helper.read_servo_for_config(back_servo, id)
+
+for id in front_servo_id:
+    helper.disable_torque(front_servo, id)
+for id in back_servo_id:
+    helper.disable_torque(back_servo, id)
