@@ -516,3 +516,6 @@ class MySensorTask(Task):
         # Read sensor, store in database
         pass
 ```
+> [!WARNING]
+> This project is archived, and is no longer actively supported.
+> Contact us for more details.
